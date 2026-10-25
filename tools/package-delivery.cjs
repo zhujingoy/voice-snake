@@ -51,7 +51,9 @@ async function main() {
     'Source: https://alphacephei.com/vosk/models/vosk-model-small-cn-0.22.zip\n' +
     'Weights unchanged; frames-per-chunk=6. Apache-2.0 text: vosk-browser-COPYING.txt\n');
   const build = { commit, sourceState: state, builtAt: new Date().toISOString(), kind: 'release-candidate',
-    model: 'vosk-model-small-cn-0.22-fast-v1', realMicrophone: 'not_verified', macOS: 'not_verified' };
+    model: 'vosk-model-small-cn-0.22-fast-v1', realMicrophone: 'not_verified', macOS: 'not_verified',
+    recognition: { default: 'lingxi', localFallback: 'vosk', credentialEndpoint: 'api/lingxi/session',
+      requiresBackend: true, lingxiLiveVerified: false } };
   await fs.writeFile(path.join(site, 'build.json'), JSON.stringify(build, null, 2));
   const archive = async (files, base, name) => {
     const entries = {};

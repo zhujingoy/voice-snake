@@ -34,6 +34,7 @@ async function main() {
   page.on('pageerror', error => errors.push(error.message));
   page.on('response', response => { if (response.status() >= 400 && !response.url().endsWith('favicon.ico')) failedRequests.push(response.url()); });
   await page.goto(url + '?review=1');
+  await page.selectOption('#voice-engine', 'local');
   await page.evaluate(async () => {
     const context = new AudioContext({ sampleRate: 16000 });
     await context.resume();
