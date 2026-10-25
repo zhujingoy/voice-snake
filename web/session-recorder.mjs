@@ -11,7 +11,7 @@ export class SessionRecorder {
     if (this.active) throw new Error('already_recording');
     if (!this.Recorder || !this.board.captureStream) throw new Error('recording_unsupported');
     const audio = microphone?.getAudioTracks().filter(track => track.readyState === 'live') || [];
-    if (!audio.length || engine !== 'local') throw new Error('local_microphone_required');
+    if (!audio.length || !['local', 'lingxi'].includes(engine)) throw new Error('microphone_required');
     const mimeType = ['video/webm;codecs=vp8,opus', 'video/webm']
       .find(type => this.Recorder.isTypeSupported(type));
     if (!mimeType) throw new Error('recording_unsupported');
@@ -31,7 +31,7 @@ export class SessionRecorder {
       clearInterval(active.timer); clearTimeout(active.limit);
       video.getTracks().forEach(track => track.stop());
       audio.forEach(track => track.removeEventListener('ended', active.ended));
-      // Audio tracks belong to LocalVoice. Stopping a recording must not stop gameplay.
+      // Audio tracks belong to the voice adapter, not the recorder.
       this.result = {
         video: new Blob(active.chunks, { type: mimeType }),
         report: { kind: this.kind, engine, startedAt: active.startedAtISO,
@@ -74,7 +74,8 @@ export class SessionRecorder {
     ctx.fillText('VOICE SNAKE', 36, 46);
     ctx.fillStyle = this.kind === 'synthetic' ? '#a13e26' : '#148451';
     ctx.font = '22px sans-serif';
-    ctx.fillText(this.kind === 'synthetic' ? '合成音频预演 · 非真人验收' : '本地麦克风录制 · 未自动评分', 36, 84);
+    const engine = this.active.engine === 'lingxi' ? '灵矽 Realtime' : '本地 Vosk';
+    ctx.fillText(this.kind === 'synthetic' ? `合成音频预演 · ${engine} · 非真人验收` : `麦克风录制 · ${engine} · 未自动评分`, 36, 84);
     ctx.fillStyle = '#173b29'; ctx.font = '20px sans-serif';
     ctx.fillText(`${s.state}   得分 ${s.score}   蛇长 ${s.snake.length}`, 36, 120);
     ctx.fillText(`${((this.now() - startedAt) / 1000).toFixed(1)}s`, 870, 46);

@@ -36,7 +36,7 @@
       </section>
       <section class="controls" aria-label="识别状态">
         <div class="section-label"><h2>语音通道</h2><img src="./icons/mic.svg" width="18" height="18" alt=""></div>
-        <label class="engine-picker" for="voice-engine"><span>识别引擎</span><select id="voice-engine"><option value="local">本地中文识别 · 快速</option><option value="browser">浏览器在线识别</option></select></label>
+        <label class="engine-picker" for="voice-engine"><span>识别引擎</span><select id="voice-engine"><option value="local">本地中文识别 · 快速</option><option value="lingxi">灵矽 Realtime</option><option value="browser">浏览器在线识别</option></select></label>
         <div class="status-line"><span class="dot" id="dot"></span><strong id="voice-status" role="status">未启动</strong></div>
         <button id="start" type="button"><img src="./icons/mic.svg" width="18" height="18" alt=""> 开始游戏</button>
         <p id="notice" role="status">本地中文模型 · 音频不上传</p>
@@ -71,6 +71,7 @@
     </section>
   </main>
   <footer><span>VOICE SNAKE · 2026</span><span id="privacy">本地语音识别 / 不持久化音频</span></footer>
+  <script defer src="./runtime-config.js"></script>
   <script defer src="./vendor/vosk.js"></script>
   <script type="module" src="./app.mjs"></script>
 </body>

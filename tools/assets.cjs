@@ -1,9 +1,10 @@
 module.exports = {
   '/': 'web/index.html', '/index.html': 'web/index.html', '/style.css': 'web/style.css',
-  '/app.mjs': 'web/app.mjs', '/signal.svg': 'web/signal.svg',
+  '/app.mjs': 'web/app.mjs', '/runtime-config.js': 'web/runtime-config.js', '/signal.svg': 'web/signal.svg',
   '/src/commands.mjs': 'src/commands.mjs', '/src/browser-voice.mjs': 'src/browser-voice.mjs',
   '/src/game.mjs': 'src/game.mjs', '/src/session.mjs': 'src/session.mjs',
   '/src/local-voice.mjs': 'src/local-voice.mjs', '/audio-capture.mjs': 'web/audio-capture.mjs',
+  '/src/lingxi-voice.mjs': 'src/lingxi-voice.mjs', '/src/pcm.mjs': 'src/pcm.mjs',
   '/vendor/vosk.js': 'node_modules/vosk-browser/dist/vosk.js',
   '/models/chinese.tar.gz': '.models/vosk-model-small-cn-0.22.tar.gz',
   '/models/chinese-fast-v1.tar.gz': '.models/vosk-model-small-cn-0.22-fast-v1.tar.gz',

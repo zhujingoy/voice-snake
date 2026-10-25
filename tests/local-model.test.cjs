@@ -111,6 +111,7 @@ async function run() {
       source.disconnect();
     }, base64);
   };
+  await page.selectOption('#voice-engine', 'local');
   await page.getByRole('button', { name: '开始游戏', exact: true }).click();
   await page.waitForFunction(() => document.getElementById('state').textContent === '游戏中');
   await play(4);
@@ -128,7 +129,7 @@ async function run() {
   assert.equal(await page.locator('#state').textContent(), '已结束');
   await page.evaluate(() => window.uiAudio.context.close());
   assert.deepEqual(errors, []);
-  console.log('PASS default local UI: synthetic audio starts, turns, reports timing, pauses and ends.');
+  console.log('PASS explicit local UI: synthetic audio starts, turns, reports timing, pauses and ends.');
 }
 run().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (browser) await browser.close();

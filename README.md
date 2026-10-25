@@ -95,6 +95,8 @@ npm test
 
 - [产品设计](docs/product.md)：玩法、规则、语音流程与性能目标。
 - [架构设计](docs/architecture.md)：模块、接口、状态与时序。
+- [灵矽 Realtime 接入设计](docs/lingxi-realtime-design.md)：可选灵矽语音引擎的协议、边界与验收方案。
+- [灵矽 Realtime 运行说明](docs/lingxi-setup.md)：本机配置、临时凭证接口和静态站点部署要求。
 - [开发计划与团队分工](docs/development-plan.md)：里程碑、协作与交付。
 - [测试报告](docs/validation.md)：环境矩阵、用例、结果与已知限制。
 - [实机验收记录模板](docs/acceptance-record.md)及[60 条口令表](docs/acceptance-samples.csv)：四环境验收已通过，详细记录待归档。

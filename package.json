@@ -8,7 +8,7 @@
   "scripts": {
     "setup:voice": "node tools/prepare-model.cjs",
     "start": "node tools/serve.cjs",
-    "test": "node tests/commands.test.mjs && node tests/game.test.mjs && node tests/session.test.mjs && node tests/local-voice.test.mjs && node tests/model-profile.test.cjs && node tests/audio-capture.test.cjs && node --test tests/server.test.cjs tests/recorder.test.mjs tests/acceptance-report.test.cjs",
+    "test": "node tests/commands.test.mjs && node tests/game.test.mjs && node tests/session.test.mjs && node tests/local-voice.test.mjs && node tests/model-profile.test.cjs && node tests/audio-capture.test.cjs && node --test tests/server.test.cjs tests/recorder.test.mjs tests/acceptance-report.test.cjs tests/pcm.test.mjs tests/lingxi-session.test.cjs tests/lingxi-voice.test.mjs",
     "report:acceptance": "node tools/summarize-acceptance.cjs",
     "test:local-model": "node tests/local-model.test.cjs",
     "verify:clean": "node tools/verify-clean.cjs",
@@ -16,7 +16,8 @@
     "verify:delivery": "node tools/verify-delivery.cjs",
     "demo:synthetic": "node tools/record-preview.cjs",
     "test:hosting": "node tests/hosting.test.cjs",
-    "test:browser": "node tests/browser.test.cjs"
+    "test:browser": "node tests/browser.test.cjs",
+    "test:lingxi-browser": "node tests/lingxi-browser.test.cjs"
   },
   "dependencies": {
     "fflate": "0.8.3",

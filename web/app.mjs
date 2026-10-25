@@ -1,6 +1,7 @@
 import { init, GameLoop } from './vendor/kontra.mjs';
 import { BrowserVoice } from './src/browser-voice.mjs';
 import { LocalVoice } from './src/local-voice.mjs';
+import { LingxiVoice } from './src/lingxi-voice.mjs';
 import { GameSession } from './src/session.mjs';
 import { drawBoard } from './renderer.mjs';
 import { SessionRecorder } from './session-recorder.mjs';
@@ -8,6 +9,7 @@ import { SessionRecorder } from './session-recorder.mjs';
 const $ = (id) => document.getElementById(id);
 const debug = new URLSearchParams(location.search).get('debug') === '1';
 const review = new URLSearchParams(location.search).get('review');
+const lingxiSessionEndpoint = globalThis.VOICE_SNAKE_CONFIG?.lingxiSessionEndpoint || './api/lingxi/session';
 const labels = { UP: '上', DOWN: '下', LEFT: '左', RIGHT: '右', PAUSE: '暂停', RESUME: '继续', RESTART: '重新开始', END: '结束游戏' };
 const states = { READY: '待启动', RUNNING: '游戏中', PAUSED: '已暂停', GAME_OVER: '已结算', ENDED: '已结束' };
 const reasons = {
@@ -27,6 +29,23 @@ const errors = {
   model_timeout: '中文模型加载超时，可重试或切换到浏览器在线识别。',
   recognition_error: '本地识别器发生错误，请重新连接语音通道。',
   audio_suspended: '音频采集已中断，请重新连接语音通道。',
+  lingxi_not_configured: '灵矽尚未配置。请按运行说明配置服务地址和密钥，或手动选择本地识别。',
+  lingxi_auth_failed: '灵矽凭证申请失败，请检查服务端 API key。',
+  lingxi_quota: '灵矽额度或并发受限，请稍后重试。',
+  session_rate_limited: '连接申请过于频繁，请稍后重试。',
+  origin_not_allowed: '当前网页未获准申请灵矽凭证，请检查访问入口。',
+  lingxi_unavailable: '灵矽凭证服务不可用，请检查服务配置及网络。',
+  lingxi_timeout: '灵矽连接超时，请重新连接语音通道。',
+  lingxi_credential_expired: '临时凭证已过期，请重新连接以自动申请。',
+  lingxi_invalid_response: '灵矽连接信息不完整，请检查服务端配置。',
+  lingxi_config_mismatch: '灵矽实际会话配置不符合游戏要求，已停止连接。',
+  lingxi_network: '灵矽网络连接失败，请重新连接语音通道。',
+  lingxi_backpressure: '语音传输积压，游戏已暂停；请检查网络后重新连接。',
+  lingxi_service_error: '灵矽服务返回错误，已暂停，请检查服务端状态。',
+  lingxi_protocol_error: '灵矽事件异常，已停止连接。',
+  lingxi_unexpected_response: '灵矽产生了非预期回复，请检查关闭自动回复的配置。',
+  lingxi_audio_clock: '无法确认音频采集时间，请更新浏览器后重试。',
+  lingxi_unsupported: '此浏览器不支持灵矽语音采集，请使用新版 Chrome 或 Edge。',
 };
 let recordCount = 0, debugSequence = 0, voiceStarting = false;
 let lastKey = '', current, previousScore = 0;
@@ -141,13 +160,14 @@ function consume(input) {
 const voiceCallbacks = {
   onStatus(status) {
     if (status === 'stopped') recorder?.stop();
-    voiceStarting = status === 'starting' || status === 'microphone';
+    voiceStarting = ['starting', 'microphone', 'connecting'].includes(status);
     $('voice-status').textContent = { starting: $('voice-engine').value === 'local' ? '加载中文模型中' : '连接中',
-      microphone: '等待麦克风授权', listening: '正在监听', stopped: '未监听' }[status];
+      microphone: '等待麦克风授权', connecting: '正在连接灵矽', listening: '正在监听', stopped: '未监听' }[status];
     $('dot').className = `dot${status === 'listening' ? ' active' : ''}`;
     session.setListening(status === 'listening');
     if (status === 'listening') $('notice').textContent = $('voice-engine').value === 'local'
-      ? '本地中文识别已连接 · 音频不上传' : '浏览器语音通道已连接 · 音频可能由厂商在线处理';
+      ? '本地中文识别已连接 · 音频不上传' : $('voice-engine').value === 'lingxi'
+        ? '灵矽 Realtime 已连接 · 音频由灵矽处理' : '浏览器语音通道已连接 · 音频可能由厂商在线处理';
   },
   onText: consume,
   onFailure(reason) {
@@ -160,13 +180,22 @@ const voiceCallbacks = {
 const browserVoice = new BrowserVoice({
   Recognition: window.SpeechRecognition || window.webkitSpeechRecognition, ...voiceCallbacks,
 });
-const localVoice = new LocalVoice({
-  Vosk: window.Vosk, ...voiceCallbacks,
-  onLevel(level) {
+function onLevel(level) {
     $('mic-level').value = level;
-    $('mic-state').textContent = !localVoice.active ? '未采集' : level >= .008 ? '正在收音' : '安静 / 输入较低';
+    $('mic-state').textContent = !voice?.getMediaStream?.() ? '未采集' : level >= .008 ? '正在收音' : '安静 / 输入较低';
+}
+const localVoice = new LocalVoice({ Vosk: window.Vosk, ...voiceCallbacks, onLevel });
+const lingxiVoice = new LingxiVoice({ ...voiceCallbacks, onLevel,
+  endpoint: new URL(lingxiSessionEndpoint, import.meta.url).href,
+  getInputState: () => session.inputContext(),
+  onIssue(reason) {
+    if (reason === 'lingxi_transcription_failed') {
+      session.interrupt('voice_unavailable');
+      $('notice').textContent = '本次语音识别失败，已暂停；语音通道保持连接，请说“继续”后重试。';
+    } else $('receipt').textContent = '已忽略过期或上一局的语音';
   },
 });
+const voices = { local: localVoice, browser: browserVoice, lingxi: lingxiVoice };
 voice = localVoice;
 if (review === '1' || review === 'synthetic') {
   $('review-panel').hidden = false;
@@ -182,9 +211,9 @@ if (review === '1' || review === 'synthetic') {
     },
   });
   $('record-start').addEventListener('click', () => {
-    try { recorder.start(localVoice.active?.stream, $('voice-engine').value); }
-    catch (error) { $('record-status').textContent = error.message === 'local_microphone_required'
-      ? '本地麦克风未连接' : '此浏览器无法录制'; }
+    try { recorder.start(voice.getMediaStream?.(), $('voice-engine').value); }
+    catch (error) { $('record-status').textContent = error.message === 'microphone_required'
+      ? '请先连接本地识别或灵矽麦克风' : '此浏览器无法录制'; }
   });
   $('record-stop').addEventListener('click', () => recorder.stop());
   const download = (blob, filename) => {
@@ -202,10 +231,12 @@ if (review === '1' || review === 'synthetic') {
 }
 $('voice-engine').addEventListener('change', () => {
   if (voiceStarting || session.listening) return;
-  voice = $('voice-engine').value === 'local' ? localVoice : browserVoice;
-  $('input-level').hidden = voice !== localVoice;
-  $('notice').textContent = voice === localVoice ? '本地中文模型 · 音频不上传' : '浏览器在线识别 · 音频可能由厂商在线处理';
-  $('privacy').textContent = voice === localVoice ? '本地语音识别 / 不持久化音频' : '浏览器在线识别 / 不持久化音频';
+  voice = voices[$('voice-engine').value];
+  $('input-level').hidden = voice === browserVoice;
+  $('notice').textContent = voice === localVoice ? '本地中文模型 · 音频不上传' : voice === lingxiVoice
+    ? '灵矽 Realtime · 音频由灵矽处理 · 凭证自动申请' : '浏览器在线识别 · 音频可能由厂商在线处理';
+  $('privacy').textContent = voice === localVoice ? '本地语音识别 / 不持久化音频' : voice === lingxiVoice
+    ? '灵矽 Realtime / 默认不保存录音' : '浏览器在线识别 / 不持久化音频';
 });
 
 $('start').addEventListener('click', () => {
@@ -235,9 +266,15 @@ if (debug) {
       receivedAt: performance.now(), isFinal: true });
   });
 }
-window.addEventListener('blur', () => session.setPresence({ focused: false }));
+window.addEventListener('blur', () => {
+  session.setPresence({ focused: false });
+  if (voice === lingxiVoice && voice.active?.ready) voice.stop();
+});
 window.addEventListener('focus', () => session.setPresence({ focused: true }));
-document.addEventListener('visibilitychange', () => session.setPresence({ visible: !document.hidden }));
+document.addEventListener('visibilitychange', () => {
+  session.setPresence({ visible: !document.hidden });
+  if (document.hidden && voice === lingxiVoice) voice.stop();
+});
 session.setPresence({ focused: document.hasFocus(), visible: !document.hidden });
 
 const observer = new ResizeObserver(() => {
