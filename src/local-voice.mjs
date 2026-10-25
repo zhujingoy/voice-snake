@@ -123,6 +123,8 @@ export class LocalVoice {
 
   fail(reason) { this.stop(); this.onFailure(reason); }
 
+  getMediaStream() { return this.active?.stream || null; }
+
   stop() {
     const active = this.active;
     this.active = null;

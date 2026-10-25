@@ -1,9 +1,16 @@
 {
-  "commit": "3ecc9a0bf550f4910d446913e5c9a22c87b7758d",
+  "commit": "b5a447664e3eb28f470e9db4bfc3e316170fbc05",
   "sourceState": "",
-  "builtAt": "2026-10-25T03:22:11.127Z",
+  "builtAt": "2026-10-25T10:44:04.654Z",
   "kind": "release-candidate",
   "model": "vosk-model-small-cn-0.22-fast-v1",
   "realMicrophone": "not_verified",
-  "macOS": "not_verified"
+  "macOS": "not_verified",
+  "recognition": {
+    "default": "local",
+    "localFallback": "vosk",
+    "credentialEndpoint": "https://voice-snake-api.kingohik.workers.dev/api/lingxi/session",
+    "requiresBackend": true,
+    "lingxiLiveVerified": false
+  }
 }

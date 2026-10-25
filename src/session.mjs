@@ -39,6 +39,11 @@ export class GameSession {
 
   ready() { return this.listening && this.focused && this.visible; }
 
+  inputContext() {
+    return { state: this.engine.state, epoch: this.epoch, boundaryAt: this.inputBoundaryAt,
+      focused: this.focused, visible: this.visible };
+  }
+
   boundary() {
     this.wallGraceUntil = null;
     this.epoch += 1;
@@ -88,6 +93,13 @@ export class GameSession {
 
   receive(input) {
     if (!input || typeof input.resultId !== 'string' || typeof input.text !== 'string') return;
+    if (input.source === 'lingxi' && (input.inputEpoch !== this.epoch ||
+        !Number.isFinite(input.audioEndAt) || input.audioEndAt < this.inputBoundaryAt ||
+        this.now() < input.audioEndAt || this.now() - input.audioEndAt > 1500)) {
+      const receipt = { accepted: false, reason: 'old_interaction' };
+      this.onReceipt(input, null, receipt);
+      return receipt;
+    }
     if (input.isFinal) {
       this.activeResults.delete(input.resultId);
       this.directionCandidates.delete(input.resultId);
