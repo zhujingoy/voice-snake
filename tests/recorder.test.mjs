@@ -38,10 +38,10 @@ test('recording is opt-in and does not retain events before start', () => {
 
 test('requires live local audio and supported browser recording', () => {
   const f = fixture();
-  assert.throws(() => f.recorder.start(null, 'local'), /local_microphone_required/);
-  assert.throws(() => f.recorder.start(f.stream, 'browser'), /local_microphone_required/);
+  assert.throws(() => f.recorder.start(null, 'local'), /microphone_required/);
+  assert.throws(() => f.recorder.start(f.stream, 'browser'), /microphone_required/);
   f.audio.readyState = 'ended';
-  assert.throws(() => f.recorder.start(f.stream, 'local'), /local_microphone_required/);
+  assert.throws(() => f.recorder.start(f.stream, 'local'), /microphone_required/);
   assert.throws(() => fixture({ Recorder: null }).recorder.start(f.stream, 'local'), /recording_unsupported/);
 });
 
@@ -86,5 +86,15 @@ test('a recorder start error releases owned video tracks without stopping audio'
   assert.throws(() => f.recorder.start(f.stream, 'local'), /capture failed/);
   assert.equal(f.recorder.active, null);
   assert.equal(f.video.stopped, true);
+  assert.equal(f.audio.stopped, false);
+});
+
+test('Lingxi recording retains engine provenance and does not stop its microphone', async t => {
+  const f = fixture();
+  t.after(() => f.recorder.stop());
+  f.recorder.start(f.stream, 'lingxi');
+  const result = await f.recorder.stop();
+  assert.equal(result.report.engine, 'lingxi');
+  assert.equal(result.report.kind, 'microphone');
   assert.equal(f.audio.stopped, false);
 });

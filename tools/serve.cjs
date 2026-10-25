@@ -5,9 +5,13 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.gz': 'application/gzip', '.svg': 'image/svg+xml' };
 const routes = require('./assets.cjs');
+const { SESSION_PATH, readConfig, createSessionBroker } = require('./lingxi-session.cjs');
+const lingxiConfig = readConfig();
+const handleLingxiSession = createSessionBroker({ config: lingxiConfig });
 let port = Number(process.env.PORT || 4173);
 if (!Number.isInteger(port) || port < 1024 || port > 65525) throw new Error('PORT must be between 1024 and 65525');
 const server = http.createServer((request, response) => {
+  if (request.url === SESSION_PATH) { void handleLingxiSession(request, response); return; }
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.writeHead(405, { Allow: 'GET, HEAD' });
     response.end();
@@ -24,7 +28,7 @@ const server = http.createServer((request, response) => {
     response.writeHead(200, {
       'Content-Type': types[path.extname(route)], 'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob:; media-src 'self' blob:; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+      'Content-Security-Policy': `default-src 'self'; script-src 'self' 'unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob: ${lingxiConfig?.socketOrigin || ''}; media-src 'self' blob:; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`,
     });
     response.end(request.method === 'HEAD' ? undefined : data);
   });

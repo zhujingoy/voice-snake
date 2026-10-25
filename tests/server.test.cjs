@@ -50,8 +50,8 @@ test('HEAD returns the same content type without a response body', async () => {
 });
 
 test('serves required runtime modules and installed vendor assets', async () => {
-  for (const route of ['/style.css', '/app.mjs', '/renderer.mjs', '/audio-capture.mjs',
-    '/src/local-voice.mjs', '/src/session.mjs', '/vendor/vosk.js', '/vendor/kontra.mjs',
+  for (const route of ['/style.css', '/app.mjs', '/runtime-config.js', '/renderer.mjs', '/audio-capture.mjs',
+    '/src/local-voice.mjs', '/src/lingxi-voice.mjs', '/src/pcm.mjs', '/src/session.mjs', '/vendor/vosk.js', '/vendor/kontra.mjs',
     '/icons/mic.svg', '/icons/volume-2.svg']) {
     const response = await fetch(url + route);
     assert.equal(response.status, 200, route);
