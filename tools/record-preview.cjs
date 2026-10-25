@@ -68,7 +68,6 @@ async function main() {
     };
   });
   await page.goto(`${url}/?review=synthetic`);
-  await page.selectOption('#voice-engine', 'local');
   await page.evaluate(async () => {
     const context = new AudioContext({ sampleRate: 16000 });
     await context.resume();

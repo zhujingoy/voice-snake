@@ -8,10 +8,10 @@
 
 ```mermaid
 flowchart TD
-  Mic["电脑麦克风"] --> Lingxi["AudioWorklet → 灵矽 Realtime（默认）"]
-  Lingxi --> Input["最终转写"]
+  Mic["电脑麦克风"] --> Local["AudioWorklet → 本地 Vosk（默认）"]
   Mic --> Browser["浏览器在线识别（显式备用）"]
-  Browser --> Input
+  Browser --> Input["标准识别结果"]
+  Local --> Input
   Input --> Parser["完整口令解析"]
   Parser --> Gate["去重、时效、状态门控"]
   Gate --> Coordinator["交互协调器"]
@@ -22,13 +22,13 @@ flowchart TD
   Focus["页面焦点 / 可见性"] --> Coordinator
 ```
 
-当前首页已连接游戏核心与 Canvas 棋盘。普通入口默认本地识别；用户可手动选择灵矽 Realtime，项目后端使用长期 API key 自动申请临时凭证，音频和转写直达灵矽；也可选择浏览器在线识别。`?debug=1` 接收文本模拟，所有路径共用指令门控与游戏规则。Kontra 调用更新与渲染，GameSession 控制 500ms 巡航步进、提前转向及前台/语音条件。
+当前首页已连接游戏核心与 Canvas 棋盘。普通入口默认本地识别，可在启动前显式选择浏览器在线备用；`?debug=1` 接收文本模拟，三者共用指令门控与游戏规则。Kontra 调用更新与渲染，GameSession 控制 500ms 巡航步进、提前转向及前台/语音条件。
 
 ## 模块规格与分工
 
 | 模块 | 输入与输出 | 职责 | 状态 | 负责人 |
 | --- | --- | --- | --- | --- |
-| 识别适配器 | 麦克风 → VoiceInput、状态、错误 | 灵矽 Realtime、本地离线备用、在线备用、生命周期与故障处理 | 灵矽适配器及模拟联调已实现；真实灵矽验收待执行 | 朱晶 |
+| 识别适配器 | 麦克风 → VoiceInput、状态、错误 | 本地音频采集与识别、在线备用、生命周期与故障处理 | 两种适配已实现，合成音频及四环境真实语音验收通过；分模式记录待归档 | 朱晶 |
 | 指令解析 | 文本 → Command/null | 完整匹配、别名、空白和句末标点处理 | 已实现 | 朱晶 |
 | 指令门控 | CommandEvent、状态、时钟 → Receipt | 去重、输入时效和状态合法性 | 已实现，执行前复检已集成 | 朱晶 |
 | 交互协调器 | 识别/焦点事件 → 游戏调用、反馈 | 启动条件、异常暂停、恢复前置条件 | 已实现，自动测试使用模拟识别事件 | 朱晶 |
@@ -50,7 +50,7 @@ type VoiceInput = {
   resultId: string;   // 识别会话前缀 + 结果索引
   receivedAt: number; // performance.now()，表示回调到达时间
   isFinal: boolean;
-  source?: 'local' | 'lingxi'; // 仅本地方向 interim 使用较短稳定窗口；灵矽首版只消费 final
+  source?: 'local'; // 本地适配器标记，用于选择较短的方向稳定窗口
 };
 type CommandEvent = { command: Command; id: string; receivedAt: number };
 type Receipt = { accepted: boolean; reason: string };
@@ -173,6 +173,6 @@ sequenceDiagram
 
 ## 识别与部署
 
-当前默认使用灵矽 Realtime：后端以长期 API key 申请临时凭证，浏览器直连灵矽 WSS，最终用户转写才进入指令门控。本地 Vosk 0.0.8 与浏览器 SpeechRecognition/webkitSpeechRecognition（zh-CN）是显式备用。Vosk 模型准备步骤、固定版本及许可证见 README，不提交大型二进制。灵矽真实服务、四环境灵矽正确率和端到端延迟仍需独立验收。
+当前默认 Vosk 0.0.8 搭配中文 small-cn 0.22 模型，在浏览器本地运行；浏览器 SpeechRecognition/webkitSpeechRecognition（zh-CN）作为显式备用。模型准备步骤、固定版本及许可证见 README，模型以独立下载产物分发，不提交大型二进制。最终支持范围仍依据四个目标环境的真实语音可用性、正确率及延迟确定。
 
 当前为原生 ES 模块，无编译步骤。运行前通过 npm 安装固定版本依赖，具体复用见 README。Kontra 负责帧循环，网格规则和语音调度由本项目模块负责。静态开发服务仅监听回环地址；外部部署使用 HTTPS。资源路径相对部署目录解析；交付工具将路由白名单导出为静态站点，并打包包含依赖和模型的离线运行包。需保密凭证的识别服务由后端或短期凭证接入。普通入口不持久化语音和诊断日志；验收录屏仅经主动操作在内存生成，由用户下载。录屏停止只释放自有视频轨道，不停止游戏拥有的麦克风；结束游戏、通道停止或离开页面时同时结束录制。测试证据按测试报告中的授权与脱敏要求保存。

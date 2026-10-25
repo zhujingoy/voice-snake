@@ -1,6 +1,3 @@
 node_modules/
 test-results/
 .models/
-.env
-.env.*
-!.env.example
